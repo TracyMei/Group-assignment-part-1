@@ -7,24 +7,64 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+```{r}
+spotify #we will use variables popularity, length, danceability, energy, artist, title and index.
+spotify <- spotify |> select(Index, Title, Artist, Energy, Danceability, `Length (Duration)`, Popularity)
+#i will create some visualizations here..
+ggplot(spotify, aes(x= Energy, y=Danceability))+
+  geom_col()
+ggplot(spotify, aes(x = Energy, y = Popularity)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth (method= 'lm', se = FALSE, color = "blue") +
+  labs(title = "Does Higher Energy Lead to More Popular Songs?",
+       x = "Energy", y = "Popularity") +
+  theme_minimal()
+#this one is comparing Energy and Popularity. so as we can see, popularity increases as energy level increase.
+```
+```{r}
+ggplot(spotify, aes(x = Danceability, y = Popularity)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "darkgreen") +
+  labs(title = "Does Danceability Affect Song Popularity?",
+       x = "Danceability", y = "Popularity") +
+  theme_minimal()
+#This one compares danceability and popularity. it also show us same relationship with energy
+```
+```{r}
+ggplot(spotify, aes(x = Energy, y = Danceability)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "orange") +
+  labs(title = "Relationship Between Energy and Danceability",
+       x = "Energy", y = "Danceability") +
+  theme_minimal()
+#following code explains the relationship between danceability and energy. there is also a positive relation between them which can be further analysed.
+```
+```{r}
+spotify$Length <- as.numeric(spotify$`Length (Duration)`)
+
+ggplot(spotify, aes(x = `Length (Duration)`, y = Popularity)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "purple") +
+  labs(title = "Does Song Length Impact Popularity?",
+       x = "Song Length (sec)", y = "Popularity") +
+  theme_minimal()
+#this one also shows that as song length decrease, popularity increase but we need some tests i think that may not be so valid.
+```
+```{r}
+ggplot(spotify) +
+  geom_smooth(aes(x = Popularity, y = Energy,       color = "Energy"),       method = "lm", se = FALSE) +
+  geom_smooth(aes(x = Popularity, y = Danceability, color = "Danceability"), method = "lm", se = FALSE) +
+  geom_smooth(aes(x = Popularity, y = `Length (Duration)`,       color = "Length"),       method = "lm", se = FALSE) +
+  scale_color_manual("Feature",
+                     values = c("Energy"="goldenrod",
+                                "Danceability"="tomato",
+                                "Length"="steelblue")) +
+  labs(title = "Feature vs Popularity Trends",
+       x     = "Popularity",
+       y     = "Feature value") +
+  theme_minimal()
+#everything in one graph. hope it helps. it took like 1 hour to me lol..
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
