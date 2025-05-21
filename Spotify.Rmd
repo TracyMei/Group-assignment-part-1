@@ -1,7 +1,7 @@
 ---
 title: "Spotify"
-author: "Tracy Mei"
-date: ""
+author: "Bilgehan Altan, Márton Cserta, Tracy Mei, Jiarui Tu"
+date: "`r Sys.Date()`"
 output:
   html_document:
     number_sections: true
@@ -18,6 +18,9 @@ library(tidyverse)
 library(readr)
 library(ggplot2)
 library(dplyr)
+library(caret)
+library(glmnet)
+library(leaps)
 ```
 
 
@@ -29,16 +32,16 @@ spotify <- read_csv("Spotify-2000.csv")
 
 ## Data
 
-```{r viewdata}
+```{r Viewdata}
 # Inspecting our dataset
 head(spotify, 10)
 ```
 
 Add desciription of data including variable information
 
-## Exploratory graphs
+# Exploratory graphs
 
-```{r graph1}
+```{r Graph1}
 spotify <- spotify |> select(Index, Title, Artist, Energy, Danceability, `Length (Duration)`, Popularity)
 #i will create some visualizations here..
 ggplot(spotify, aes(x = Energy, y = Danceability))+
@@ -55,7 +58,7 @@ ggplot(spotify, aes(x = Energy, y = Popularity)) +
 
 
 
-```{r graph2}
+```{r Graph2}
 ggplot(spotify, aes(x = Danceability, y = Popularity)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE, color = "darkgreen") +
@@ -67,7 +70,7 @@ ggplot(spotify, aes(x = Danceability, y = Popularity)) +
 
 
 
-```{r graph3}
+```{r Graph3}
 ggplot(spotify, aes(x = Energy, y = Danceability)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE, color = "orange") +
@@ -79,7 +82,7 @@ ggplot(spotify, aes(x = Energy, y = Danceability)) +
 
 
 
-```{r graph4}
+```{r Graph4}
 spotify$Length <- as.numeric(spotify$`Length (Duration)`)
 
 spotify %>%
@@ -95,7 +98,7 @@ spotify %>%
 
 
 
-```{r graph5}
+```{r Graph5}
 ggplot(spotify) +
   geom_smooth(aes(x = Popularity, y = Energy,       color = "Energy"),       method = "lm", se = FALSE) +
   geom_smooth(aes(x = Popularity, y = Danceability, color = "Danceability"), method = "lm", se = FALSE) +
@@ -113,24 +116,147 @@ ggplot(spotify) +
 
 Add distribution graphs and descriptions.
 
-## Research question
+# Research question
 
-Choose the dependent variable and define research question.
+Based on the exploratory data analysis, we observe potential relationships between audio features such as Energy, Danceability, and Length (Duration) with the Popularity of songs on Spotify. The graphs suggest that higher Energy and Danceability may be associated with increased Popularity, while longer song Length might have a negative effect. Therefore, our research question is:
+
+**"How do audio features such as Energy, Danceability, and Length influence the Popularity of songs on Spotify?"**
+
+We will use linear regression to model this relationship and determine which features are the most significant predictors of a song's popularity.
 
 
 # Linear Model
 
 ## Data Split
 
-Split the data into training, validation and test sets.
+We split the data into training (70%), validation (15%), and test (15%) sets to ensure proper model training, selection, and evaluation.
+
+```{r Data Split}
+# Set seed for reproducibility
+set.seed(123)
+
+# Split data into 70% training, 15% validation, and 15% test
+trainIndex <- createDataPartition(spotify$Popularity, p = 0.7, list = FALSE)
+train_data <- spotify[trainIndex, ]
+temp_data <- spotify[-trainIndex, ]
+
+valIndex <- createDataPartition(temp_data$Popularity, p = 0.5, list = FALSE)
+val_data <- temp_data[valIndex, ]
+test_data <- temp_data[-valIndex, ]
+```
+
 
 ## Model selection
 
 Use methods like Lasso and best subset selection to choose the best regressors
 
-## Results
+We used two methods for model selection: Lasso regression and best subset selection to identify the best predictors of Popularity.
+
+### Lasso Regression
+
+Lasso regression was performed to select the most important features by shrinking less important coefficients to zero.
+
+```{r Lasso Regression}
+# Prepare data for glmnet
+X_train <- model.matrix(Popularity ~ Energy + Danceability + Length, data = train_data)[, -1]
+y_train <- train_data$Popularity
+
+# Fit Lasso model
+lasso_model <- cv.glmnet(X_train, y_train, alpha = 1)
+
+# Best lambda
+best_lambda <- lasso_model$lambda.min
+
+# Coefficients
+coef(lasso_model, s = best_lambda)
+```
+### Best Subset Selection
+
+Best subset selection was used to evaluate all possible combinations of predictors and select the best model.
+
+```{r Best Subset}
+# Perform best subset selection
+best_subset <- regsubsets(Popularity ~ Energy + Danceability + Length, data = train_data, nvmax = 3)
+
+# Summary of best subsets
+summary(best_subset)
+
+print(summary_subset$which)
+```
+## Model evaluation
+
+We evaluated both models on the validation set using Mean Squared Error (MSE) to determine which performs better.
+
+```{r Model evaluation}
+# Predict on validation set using Lasso
+X_val <- model.matrix(Popularity ~ Energy + Danceability + Length, data = val_data)[, -1]
+lasso_pred <- predict(lasso_model, s = best_lambda, newx = X_val)
+
+# Calculate MSE for Lasso
+lasso_mse <- mean((val_data$Popularity - lasso_pred)^2)
+
+# For best subset, select the best model (e.g., with 2 variables, assuming Energy and Danceability)
+best_model <- lm(Popularity ~ Energy + Danceability, data = train_data)
+best_pred <- predict(best_model, newdata = val_data)
+
+# Calculate MSE for best subset
+best_mse <- mean((val_data$Popularity - best_pred)^2)
+
+# Compare MSE
+print(paste("Lasso MSE:", round(lasso_mse, 2)))
+print(paste("Best Subset MSE:", round(best_mse, 2)))
+```
+
+- Lasso Model: The MSE on the validation set was 209.28.
+- Best Subset Model: Using the two-variable model (Energy and Danceability), the MSE was 209.75.
+
+The Lasso model achieved a slightly lower MSE (209.28 vs. 209.75), indicating marginally better predictive performance on the validation set. Although the difference is small, we selected the Lasso model for final evaluation due to its lower MSE.
+
+# Results
 
 Include the chosen regression summary, test MSE, and interpret results.
+
+The final model selected was the **Lasso regression model**, incorporating Energy, Danceability, and Length as predictors of Popularity. This model was chosen due to its slightly lower validation Mean Squared Error (MSE) of 209.28 compared to the Best Subset model’s 209.75, indicating marginally better predictive performance.
+
+## Final Model Evaluation
+To evaluate the model’s performance on unseen data, the Lasso model was tested on the test set.
+
+```{r Test Evaluation}
+# Prepare test data for prediction
+X_test <- model.matrix(Popularity ~ Energy + Danceability + Length, data = test_data)[, -1]
+
+# Predict on test set using the Lasso model
+test_pred <- predict(lasso_model, s = best_lambda, newx = X_test)
+
+# Calculate test MSE
+test_mse <- mean((test_data$Popularity - test_pred)^2)
+
+# Output test MSE
+print(paste("Test MSE:", round(test_mse, 2)))
+```
+
+The test MSE of 178.07 reflects the model’s average squared prediction error on new data, offering insight into its generalization capability.
+
+## Model Summary
+
+The coefficients of the Lasso regression model are:
+
+- Intercept: 51.74
+- Energy: 0.0546
+- Danceability: 0.1290
+- Length: -0.0089
+
+These coefficients indicate:
+
+- **Danceability** has the strongest positive effect, increasing Popularity by 0.1290 per unit, holding other variables constant.
+- **Energy** has the strongest positive effect, increasing Popularity by 0.1290 per unit, holding other variables constant.
+- **Length** has a minimal negative effect, reducing Popularity by 0.0089 per second.
+
+The negligible coefficient for Length suggests its limited impact, while Danceability stands out as the most significant predictor.
+
+## Interpretation
+
+The results align with the exploratory analysis, confirming that higher **Danceability** and **Energy** are associated with greater Popularity, while **Length** has a slight negative influence. The test MSE is 178.07, indicating that the model has some predictive power, but the variance of Popularity (e.g. 500) suggests that there may be unmodeled factors, such as genre or artist popularity. Music platforms can use these insights to optimize recommendation algorithms and prioritize songs with high Danceability.
 
 # Conclusion
 
