@@ -1,29 +1,61 @@
 ---
 title: "Spotify"
 author: "Tracy Mei"
-date: "`r Sys.Date()`"
-output: html_document
+date: ""
+output:
+  html_document:
+    number_sections: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
 ```
-```{r}
-spotify #we will use variables popularity, length, danceability, energy, artist, title and index.
+
+
+```{r packages, message=FALSE}
+# packages used in our report
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(dplyr)
+```
+
+
+```{r import, message=FALSE}
+# importing the Spotify dataset
+spotify <- read_csv("Spotify-2000.csv")
+```
+# Introduction
+
+## Data
+
+```{r viewdata}
+# Inspecting our dataset
+head(spotify, 10)
+```
+
+Add desciription of data including variable information
+
+## Exploratory graphs
+
+```{r graph1}
 spotify <- spotify |> select(Index, Title, Artist, Energy, Danceability, `Length (Duration)`, Popularity)
 #i will create some visualizations here..
-ggplot(spotify, aes(x= Energy, y=Danceability))+
+ggplot(spotify, aes(x = Energy, y = Danceability))+
   geom_col()
 ggplot(spotify, aes(x = Energy, y = Popularity)) +
   geom_point(alpha = 0.6) +
   geom_smooth (method= 'lm', se = FALSE, color = "blue") +
   labs(title = "Does Higher Energy Lead to More Popular Songs?",
-       x = "Energy", y = "Popularity") +
+       x = "Energy",
+       y = "Popularity") +
   theme_minimal()
 #this one is comparing Energy and Popularity. so as we can see, popularity increases as energy level increase.
 ```
-```{r}
+
+
+
+```{r graph2}
 ggplot(spotify, aes(x = Danceability, y = Popularity)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE, color = "darkgreen") +
@@ -32,7 +64,10 @@ ggplot(spotify, aes(x = Danceability, y = Popularity)) +
   theme_minimal()
 #This one compares danceability and popularity. it also show us same relationship with energy
 ```
-```{r}
+
+
+
+```{r graph3}
 ggplot(spotify, aes(x = Energy, y = Danceability)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE, color = "orange") +
@@ -41,22 +76,30 @@ ggplot(spotify, aes(x = Energy, y = Danceability)) +
   theme_minimal()
 #following code explains the relationship between danceability and energy. there is also a positive relation between them which can be further analysed.
 ```
-```{r}
+
+
+
+```{r graph4}
 spotify$Length <- as.numeric(spotify$`Length (Duration)`)
 
-ggplot(spotify, aes(x = `Length (Duration)`, y = Popularity)) +
-  geom_point(alpha = 0.6) +
-  geom_smooth(method = "lm", se = FALSE, color = "purple") +
-  labs(title = "Does Song Length Impact Popularity?",
-       x = "Song Length (sec)", y = "Popularity") +
-  theme_minimal()
+spotify %>%
+  filter(`Length (Duration)` < 1000) %>%
+  ggplot(aes(x = `Length (Duration)`, y = Popularity)) +
+    geom_point(alpha = 0.6) +
+    geom_smooth(method = "lm", se = FALSE, color = "purple") +
+    labs(title = "Does Song Length Impact Popularity?",
+         x = "Song Length (sec)", y = "Popularity") +
+    theme_minimal()
 #this one also shows that as song length decrease, popularity increase but we need some tests i think that may not be so valid.
 ```
-```{r}
+
+
+
+```{r graph5}
 ggplot(spotify) +
   geom_smooth(aes(x = Popularity, y = Energy,       color = "Energy"),       method = "lm", se = FALSE) +
   geom_smooth(aes(x = Popularity, y = Danceability, color = "Danceability"), method = "lm", se = FALSE) +
-  geom_smooth(aes(x = Popularity, y = `Length (Duration)`,       color = "Length"),       method = "lm", se = FALSE) +
+  geom_smooth(aes(x = Popularity, y = `Length (Duration)`,      color = "Length"),       method = "lm", se = FALSE) +
   scale_color_manual("Feature",
                      values = c("Energy"="goldenrod",
                                 "Danceability"="tomato",
@@ -67,4 +110,35 @@ ggplot(spotify) +
   theme_minimal()
 #everything in one graph. hope it helps. it took like 1 hour to me lol..
 ```
+
+Add distribution graphs and descriptions.
+
+## Research question
+
+Choose the dependent variable and define research question.
+
+
+# Linear Model
+
+## Data Split
+
+Split the data into training, validation and test sets.
+
+## Model selection
+
+Use methods like Lasso and best subset selection to choose the best regressors
+
+## Results
+
+Include the chosen regression summary, test MSE, and interpret results.
+
+# Conclusion
+
+Conclude, state limitations, etc.
+
+# Contributions
+
+
+
+AI statement:
 
