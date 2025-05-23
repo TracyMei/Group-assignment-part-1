@@ -60,9 +60,8 @@ ggplot(spotify, aes(x = Energy, y = Popularity)) +
        x = "Energy",
        y = "Popularity") +
   theme_minimal()
-#this one is comparing Energy and Popularity. so as we can see, popularity increases as energy level increase.
+#This graph shows the relationship between a song's Energy and its corresponding Danceability frequency. It can be seen that most of the songs have Energy values between 30 and 80, with a particular peak around 70, suggesting that songs with medium to high Energy levels are more common and may be more danceable. As Energy increases, the frequency of Danceability also increases, suggesting that there may be a positive correlation between the two. This finding provides a preliminary basis for further research on whether Energy and Danceability can significantly predict song popularity.
 ```
-##This graph shows the relationship between a song's Energy and its corresponding Danceability frequency. It can be seen that most of the songs have Energy values between 30 and 80, with a particular peak around 70, suggesting that songs with medium to high Energy levels are more common and may be more danceable. As Energy increases, the frequency of Danceability also increases, suggesting that there may be a positive correlation between the two. This finding provides a preliminary basis for further research on whether Energy and Danceability can significantly predict song popularity.
 
 
 ```{r Graph2}
@@ -72,9 +71,10 @@ ggplot(spotify, aes(x = Danceability, y = Popularity)) +
   labs(title = "Does Danceability Affect Song Popularity?",
        x = "Danceability", y = "Popularity") +
   theme_minimal()
-#This one compares danceability and popularity. it also show us same relationship with energy
+#As can be seen from the graph, there is a positive correlation between a song's Energy and Popularity, i.e. songs with higher Energy may be slightly more popular overall.
+
 ```
-##As can be seen from the graph, there is a positive correlation between a song's Energy and Popularity, i.e. songs with higher Energy may be slightly more popular overall.
+
 
 
 
@@ -85,9 +85,10 @@ ggplot(spotify, aes(x = Energy, y = Danceability)) +
   labs(title = "Relationship Between Energy and Danceability",
        x = "Energy", y = "Danceability") +
   theme_minimal()
-#following code explains the relationship between danceability and energy. there is also a positive relation between them which can be further analysed.
+#As can be seen from the graph, there is a clear positive correlation between Energy and Danceability of a song. That is, songs with higher Energy are more likely to have higher Danceability. This trend is verified by the regression line, although there is still some degree of dispersion in the data points. This finding supports the hypothesis in the previous exploratory analyses that Energy may indirectly further influence song popularity by increasing Danceability.
+
 ```
-##As can be seen from the graph, there is a clear positive correlation between Energy and Danceability of a song. That is, songs with higher Energy are more likely to have higher Danceability. This trend is verified by the regression line, although there is still some degree of dispersion in the data points. This finding supports the hypothesis in the previous exploratory analyses that Energy may indirectly further influence song popularity by increasing Danceability.
+
 
 
 ```{r Graph4}
@@ -101,9 +102,10 @@ spotify %>%
     labs(title = "Does Song Length Impact Popularity?",
          x = "Song Length (sec)", y = "Popularity") +
     theme_minimal()
-#this one also shows that as song length decrease, popularity increase but we need some tests i think that may not be so valid.
+#The graph shows a slight negative correlation between song length and popularity. That is, shorter songs are more likely to achieve higher popularity overall. This trend is validated by the regression line, which, despite the wide scatter distribution, still shows that longer songs are slightly less popular on the Spotify platform.
+
 ```
-##The graph shows a slight negative correlation between song length and popularity. That is, shorter songs are more likely to achieve higher popularity overall. This trend is validated by the regression line, which, despite the wide scatter distribution, still shows that longer songs are slightly less popular on the Spotify platform.
+
 
 ```{r Graph5}
 ggplot(spotify) +
@@ -118,10 +120,8 @@ ggplot(spotify) +
        x     = "Popularity",
        y     = "Feature value") +
   theme_minimal()
-#everything in one graph. hope it helps. it took like 1 hour to me lol..
+#This graph clearly shows the trend relationship between three audio characteristics and song popularity: Danceability and Energy are positively correlated with popularity, while Length is negatively correlated with popularity. That is, more popular songs tend to be more rhythmic and energetic, but shorter in length.
 ```
-##This graph clearly shows the trend relationship between three audio characteristics and song popularity: Danceability and Energy are positively correlated with popularity, while Length is negatively correlated with popularity. That is, more popular songs tend to be more rhythmic and energetic, but shorter in length.
-
 Add distribution graphs and descriptions.
 
 # Research question
