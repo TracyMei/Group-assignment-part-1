@@ -174,28 +174,65 @@ We used two methods for model selection: Lasso regression and best subset select
 
 ### Lasso Regression
 
-Lasso regression was performed to select the most important features by shrinking less important coefficients to zero.
+Lasso regression was performed to select important features by shrinking less relevant coefficients to zero, using all nine predictors to ensure comprehensive feature selection.
 
 ```{r Lasso Regression}
-# Prepare data for glmnet
-X_train <- model.matrix(Popularity ~ Energy + Danceability + Length, data = train_data)[, -1]
+# Define predictors
+predictors <- c("BPM", "Energy", "Danceability", "Loudness", "Liveness", 
+                "Valence", "Length", "Acousticness", "Speechiness")
+
+# Prepare model matrices
+X_train <- model.matrix(Popularity ~ ., data = train_data[, c("Popularity", predictors)])[ , -1]
 y_train <- train_data$Popularity
 
-# Fit Lasso model
-lasso_model <- cv.glmnet(X_train, y_train, alpha = 1)
+X_val <- model.matrix(Popularity ~ ., data = val_data[, c("Popularity", predictors)])[ , -1]
+y_val <- val_data$Popularity
 
-# Best lambda
-best_lambda <- lasso_model$lambda.min
 
-# Coefficients
-coef(lasso_model, s = best_lambda)
+# Fit Lasso with cross-validation
+set.seed(123)  # for reproducibility
+lasso_cv <- cv.glmnet(X_train, y_train, alpha = 1)
+
+# Optimal lambda
+lambda_opt <- lasso_cv$lambda.min
+cat("Optimal lambda selected by CV:", round(lambda_opt, 4), "\n")
+
+# Coefficient extraction
+lasso_coef <- coef(lasso_cv, s = lambda_opt)
+coef_df <- data.frame(
+  Feature = rownames(lasso_coef),
+  Coefficient = as.vector(lasso_coef)
+) %>%
+  filter(Coefficient != 0 & Feature != "(Intercept)")
+
+cat("Selected predictors by Lasso:\n")
+print(coef_df)
+
+# Plot cross-validation curve
+plot(lasso_cv)
+title("Lasso Cross-Validation Curve", line = 2.5)
 ```
+
+Using cross-validation, the optimal regularization parameter was found to be λ = 0.0264, which balances model complexity and predictive performance.
+
+At this optimal λ, the model retained all nine predictors, indicating that each variable contributes meaningfully to the prediction of popularity, although to varying degrees.
+
+The largest coefficients (in absolute value) were associated with:
+
+- Loudness (+0.769): Strongest positive influence, suggesting louder songs tend to be more popular.
+
+- Speechiness (+0.311): Positively related to popularity, potentially reflecting trends in genres with more spoken words (e.g., rap).
+
+- Liveness (−0.126): Negatively associated with popularity, indicating that tracks with a more live performance feel might be less favored by listeners.
+
+Other predictors such as Danceability, Valence, and Energy also contributed with moderate coefficients, while variables like BPM, Length, and Acousticness had relatively small effects.
+
 ### Best Subset Selection
 
 ```{r lm_mse function}
 #creating a function that calculates the mses
 lm_mse <- function(formula, train_data, valid_data) {
-  y_name <- as.character(formula)[2]
+  y_name <- all.vars(formula)[1]
   y_true <- valid_data[[y_name]]
   
   lm_fit <- lm(formula, train_data)
@@ -233,6 +270,14 @@ predictor_vars
 best_preds <- c()
 best_mses <- c()
 
+# Create a dataframe to store results for readability
+results_df <- data.frame(
+  Num_Predictors = integer(),
+  Formula = character(),
+  MSE = double(),
+  stringsAsFactors = FALSE
+)
+
 # repeating for 1 to 9 predictors
 for (p in 1:9) {
   # generating formulas
@@ -258,82 +303,85 @@ best_mse <- min(best_mses)
 
 We evaluated both models on the validation set using Mean Squared Error (MSE) to determine which performs better.
 
-```{r mse function}
+```{r MSE function}
 mse <- function(y_true, y_pred) {
   mean((y_true - y_pred)^2)
 }
 ```
 
-
-
 ```{r Model evaluation}
-# Predict on validation set using Lasso
-X_val <- model.matrix(Popularity ~ Energy + Danceability + Length, data = val_data)[, -1]
-lasso_pred <- predict(lasso_model, s = best_lambda, newx = X_val)
+set.seed(123)
 
-# Calculate MSE for Lasso
-lasso_mse <- mean((val_data$Popularity - lasso_pred)^2)
+# --- Lasso Regression Model Evaluation ---
 
-# Calculating the coefficients of the best model from Best Subset
+# Predict Popularity on validation data using the Lasso model with optimal lambda
+y_val_pred_lasso <- predict(lasso_cv, s = lambda_opt, newx = X_val)
 
-lm_best_subset <- lm(best_model, train_data)
+# Calculate MSE for Lasso predictions on validation set
+mse_lasso <- mse(y_val, y_val_pred_lasso)
+cat("Validation MSE for Lasso regression:", round(mse_lasso, 4), "\n")
 
-# Calculating Best Subset MSE based on test data
-y_pred <- predict(lm_best_subset, newdata = test_data)
-y_true <- test_data$Popularity
-test_mse <- mse(y_true, y_pred)
+# --- Best Subset Selection Model Evaluation ---
 
-# Compare MSE
-print(paste("Lasso MSE:", round(lasso_mse, 2)))
-print(paste("Best Subset MSE:", round(test_mse, 2)))
+# Fit the best subset selection model (best_model formula) on training data
+best_lm <- lm(as.formula(best_model), data = train_data)
+
+# Predict Popularity on validation data using best subset model
+y_val_pred_best <- predict(best_lm, newdata = val_data)
+
+# Calculate MSE for best subset model predictions on validation set
+mse_best <- mse(val_data$Popularity, y_val_pred_best)
+cat("Validation MSE for Best Subset Selection:", round(mse_best, 4), "\n")
+
+# --- Summary Table ---
+
+# Create a summary data frame for easy comparison
+mse_summary <- data.frame(
+  Model = c("Lasso Regression", "Best Subset Selection"),
+  Validation_MSE = c(mse_lasso, mse_best)
+)
+
+print(mse_summary)
 ```
 
-- Lasso Model: The MSE on the validation set was 209.28.
-- Best Subset Model: Using the best subset selection, the MSE was 173.25.
 
-The Lasso model achieved a slightly lower MSE (209.28 vs. 209.75), indicating marginally better predictive performance on the validation set. Although the difference is small, we selected the Lasso model for final evaluation due to its lower MSE.
+- Lasso Model: The MSE on the validation set was 203.63.
+- Best Subset Model: Using the best subset selection, the MSE was 198.67.
+
+The Best Subset Model achieved a slightly lower MSE (198.67 vs. 203.63), indicating marginally better predictive performance on the validation set. Although the difference is small, we selected the Best Subset Model for final evaluation due to its lower MSE.
 
 # Results
 
 Include the chosen regression summary, test MSE, and interpret results.
 
-The final model selected was the **Lasso regression model**, incorporating Energy, Danceability, and Length as predictors of Popularity. This model was chosen due to its slightly lower validation Mean Squared Error (MSE) of 209.28 compared to the Best Subset model’s 209.75, indicating marginally better predictive performance.
+The final model selected was the **Best Subset Model**, incorporating Energy, Danceability, and Liveness as predictors of Popularity. This model was chosen due to its slightly lower validation Mean Squared Error (MSE) of 198.67 compared to the Best Subset model’s 203.63, indicating marginally better predictive performance.
 
 ## Final Model Evaluation
-To evaluate the model’s performance on unseen data, the Lasso model was tested on the test set.
+To evaluate the model’s performance on unseen data, the Best Subset Model was tested on the test set.
 
 ```{r Test Evaluation}
-# Prepare test data for prediction
-X_test <- model.matrix(Popularity ~ Energy + Danceability + Length, data = test_data)[, -1]
+# Define predictor variables used in the Best Subset Selection model
+predictor_vars <- c("Energy", "Danceability", "Liveness", "Valence", 
+                    "Acousticness", "Speechiness", "BPM", "Length", "Loudness")
 
-# Predict on test set using the Lasso model
-test_pred <- predict(lasso_model, s = best_lambda, newx = X_test)
+# Prepare test set matrix for prediction (remove intercept column if present)
+X_test <- model.matrix(~ ., data = test_data[, predictor_vars])[ , -1]
+y_test <- test_data$Popularity
 
-# Calculate test MSE
-test_mse <- mean((test_data$Popularity - test_pred)^2)
+# Predict using the Best Subset Selection model
+y_test_pred <- predict(best_lm, newdata = test_data[, predictor_vars])
 
-# Output test MSE
-print(paste("Test MSE:", round(test_mse, 2)))
+# Calculate Mean Squared Error on the test set
+mse_test <- mean((y_test - y_test_pred)^2)
+
+# Output the result
+cat("Test set MSE for Best Subset Selection model:", round(mse_test, 4), "\n")
 ```
 
-The test MSE of 178.07 reflects the model’s average squared prediction error on new data, offering insight into its generalization capability.
+The test MSE of 173.25 reflects the model’s average squared prediction error on new data, offering insight into its generalization capability.
 
 ## Model Summary
 
-The coefficients of the Lasso regression model are:
-
-- Intercept: 51.74
-- Energy: 0.0546
-- Danceability: 0.1290
-- Length: -0.0089
-
-These coefficients indicate:
-
-- **Danceability** has the strongest positive effect, increasing Popularity by 0.1290 per unit, holding other variables constant.
-- **Energy** has the strongest positive effect, increasing Popularity by 0.1290 per unit, holding other variables constant.
-- **Length** has a minimal negative effect, reducing Popularity by 0.0089 per second.
-
-The negligible coefficient for Length suggests its limited impact, while Danceability stands out as the most significant predictor.
 
 ## Interpretation
 
@@ -346,8 +394,9 @@ In summary, this study provides a preliminary quantitative basis for understandi
 
 # Contributions
 
-* Tujiarui: Conducting data visualization analysis and writing the Introduction and Conclusion. Summarizing key insights, limitations, and future directions in the report.
-* Marton: Selecting best model through best subset. Formatting and 
+- Tujiarui: Conducting data visualization analysis and writing the Introduction and Conclusion. Summarizing key insights, limitations, and future directions in the report.
+- Marton: Selecting best model through best subset. Formatting and 
+- Tracy: Generate one research question using linear regression line. Using lasso regression and Best Subset Selection, and Model evaluation.
 
 AI statement:
 
