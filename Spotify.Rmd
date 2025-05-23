@@ -29,6 +29,13 @@ library(leaps)
 spotify <- read_csv("Spotify-2000.csv")
 ```
 # Introduction
+In the digital music era, platforms like Spotify use a variety of audio features to describe and categorize songs, ranging from Energy and Danceability to Length (Duration). Understanding how these features relate to a song’s Popularity can provide valuable insights for both artists and music streaming services.
+
+Preliminary exploratory data analysis revealed potential associations: songs with higher Energy and Danceability tend to be more popular, while longer songs may receive fewer plays. These observations lead us to the central research question:
+
+"How do audio features such as Energy, Danceability, and Length influence the Popularity of songs on Spotify?"
+
+To address this question, we employ both visual exploration and a Lasso regression model to determine the significance and direction of each feature’s impact on popularity. By doing so, we aim to uncover which characteristics most strongly predict a song’s success on the platform.
 
 ## Data
 
@@ -55,7 +62,7 @@ ggplot(spotify, aes(x = Energy, y = Popularity)) +
   theme_minimal()
 #this one is comparing Energy and Popularity. so as we can see, popularity increases as energy level increase.
 ```
-
+##This graph shows the relationship between a song's Energy and its corresponding Danceability frequency. It can be seen that most of the songs have Energy values between 30 and 80, with a particular peak around 70, suggesting that songs with medium to high Energy levels are more common and may be more danceable. As Energy increases, the frequency of Danceability also increases, suggesting that there may be a positive correlation between the two. This finding provides a preliminary basis for further research on whether Energy and Danceability can significantly predict song popularity.
 
 
 ```{r Graph2}
@@ -67,6 +74,7 @@ ggplot(spotify, aes(x = Danceability, y = Popularity)) +
   theme_minimal()
 #This one compares danceability and popularity. it also show us same relationship with energy
 ```
+##As can be seen from the graph, there is a positive correlation between a song's Energy and Popularity, i.e. songs with higher Energy may be slightly more popular overall.
 
 
 
@@ -79,7 +87,7 @@ ggplot(spotify, aes(x = Energy, y = Danceability)) +
   theme_minimal()
 #following code explains the relationship between danceability and energy. there is also a positive relation between them which can be further analysed.
 ```
-
+##As can be seen from the graph, there is a clear positive correlation between Energy and Danceability of a song. That is, songs with higher Energy are more likely to have higher Danceability. This trend is verified by the regression line, although there is still some degree of dispersion in the data points. This finding supports the hypothesis in the previous exploratory analyses that Energy may indirectly further influence song popularity by increasing Danceability.
 
 
 ```{r Graph4}
@@ -95,8 +103,7 @@ spotify %>%
     theme_minimal()
 #this one also shows that as song length decrease, popularity increase but we need some tests i think that may not be so valid.
 ```
-
-
+##The graph shows a slight negative correlation between song length and popularity. That is, shorter songs are more likely to achieve higher popularity overall. This trend is validated by the regression line, which, despite the wide scatter distribution, still shows that longer songs are slightly less popular on the Spotify platform.
 
 ```{r Graph5}
 ggplot(spotify) +
@@ -113,6 +120,7 @@ ggplot(spotify) +
   theme_minimal()
 #everything in one graph. hope it helps. it took like 1 hour to me lol..
 ```
+##This graph clearly shows the trend relationship between three audio characteristics and song popularity: Danceability and Energy are positively correlated with popularity, while Length is negatively correlated with popularity. That is, more popular songs tend to be more rhythmic and energetic, but shorter in length.
 
 Add distribution graphs and descriptions.
 
@@ -259,12 +267,13 @@ The negligible coefficient for Length suggests its limited impact, while Danceab
 The results align with the exploratory analysis, confirming that higher **Danceability** and **Energy** are associated with greater Popularity, while **Length** has a slight negative influence. The test MSE is 178.07, indicating that the model has some predictive power, but the variance of Popularity (e.g. 500) suggests that there may be unmodeled factors, such as genre or artist popularity. Music platforms can use these insights to optimize recommendation algorithms and prioritize songs with high Danceability.
 
 # Conclusion
-
-Conclude, state limitations, etc.
+Overall, the findings suggest that music platforms can prioritise works with higher danceability and energy in their recommendation algorithms, while music creators who wish to increase the popularity of their works can pay more attention to the rhythmic and dynamic qualities of their melodies, and keep the length of their songs moderate in order to adapt to the listening preferences of current users.
+Although this study reveals the effects of Danceability, Energy and Length on song popularity, there are some limitations. Firstly, the model only incorporates the three audio features and does not take into account other variables such as artist popularity, music genre, and lyrics content that may significantly affect popularity. Second, the popularity metrics are based on Spotify's internal algorithms, which are calculated in an opaque way and may be affected by changes in the platform's rules. Finally, the Lasso regression is a linear model, which makes it difficult to capture non-linear relationships or complex interaction effects between variables. Future studies may consider introducing more influencing factors and adopting non-linear machine learning methods (e.g., random forests or neural networks) to enhance the predictive ability of the model; at the same time, it may also be extended to other streaming platforms for comparative analyses or to explore the dynamic evolution of popularity in combination with the temporal dimension, so as to understand the mechanism of music popularity in a more comprehensive way.
+In summary, this study provides a preliminary quantitative basis for understanding the audio feature basis of song popularity, and the results are of some guiding significance for the optimisation of music recommendation systems as well as creators' creative strategies, but there is still room for further expansion and deepening.
 
 # Contributions
 
-
+Tujiarui: Conducting data visualization analysis and writing the Introduction and Conclusion.Summarizing key insights, limitations, and future directions in the report.
 
 AI statement:
 
