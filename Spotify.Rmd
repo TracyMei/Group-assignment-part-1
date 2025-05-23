@@ -273,7 +273,7 @@ In summary, this study provides a preliminary quantitative basis for understandi
 
 # Contributions
 
-Tujiarui: Conducting data visualization analysis and writing the Introduction and Conclusion.Summarizing key insights, limitations, and future directions in the report.
+Tujiarui 7877714: Conducting data visualization analysis and writing the Introduction and Conclusion.Summarizing key insights, limitations, and future directions in the report.
 
 AI statement:
 
