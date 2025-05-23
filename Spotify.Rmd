@@ -1,5 +1,6 @@
 ---
 title: "Spotify"
+subtitle: "Practical 2, Group 26"
 author: "Bilgehan Altan, Márton Cserta, Tracy Mei, Jiarui Tu"
 date: "`r Sys.Date()`"
 output:
@@ -21,6 +22,7 @@ library(dplyr)
 library(caret)
 library(glmnet)
 library(leaps)
+library(ISLR)
 ```
 
 
@@ -35,22 +37,29 @@ Preliminary exploratory data analysis revealed potential associations: songs wit
 
 "How do audio features such as Energy, Danceability, and Length influence the Popularity of songs on Spotify?"
 
-To address this question, we employ both visual exploration and a Lasso regression model to determine the significance and direction of each feature’s impact on popularity. By doing so, we aim to uncover which characteristics most strongly predict a song’s success on the platform.
+To address this question, we employ both visual exploration, and use best subset selection and a Lasso regression model to determine which features have an impact on popularity. After selecting the best model, we explore the significance and direction of each feature’s impact on popularity. By doing so, we aim to uncover which characteristics most strongly predict a song’s success on the platform.
 
 ## Data
 
 ```{r Viewdata}
 # Inspecting our dataset
 head(spotify, 10)
+summary(spotify)
 ```
 
-Add desciription of data including variable information
+The Spotify dataset consists of 1994 observations (songs), containing song attributes and popularity (ranging from 11 to 100).
+
+```{r renaming variables}
+# renaming variables to avoid errors with spaces
+spotify <- spotify %>%
+  mutate(BPM = `Beats Per Minute (BPM)`, .keep = "unused") %>%
+  mutate(Length = `Length (Duration)`, .keep = "unused") %>%
+  mutate(Loudness = `Loudness (dB)`, .keep = "unused")
+```
 
 # Exploratory graphs
 
 ```{r Graph1}
-spotify <- spotify |> select(Index, Title, Artist, Energy, Danceability, `Length (Duration)`, Popularity)
-#i will create some visualizations here..
 ggplot(spotify, aes(x = Energy, y = Danceability))+
   geom_col()
 ggplot(spotify, aes(x = Energy, y = Popularity)) +
@@ -60,8 +69,10 @@ ggplot(spotify, aes(x = Energy, y = Popularity)) +
        x = "Energy",
        y = "Popularity") +
   theme_minimal()
-#This graph shows the relationship between a song's Energy and its corresponding Danceability frequency. It can be seen that most of the songs have Energy values between 30 and 80, with a particular peak around 70, suggesting that songs with medium to high Energy levels are more common and may be more danceable. As Energy increases, the frequency of Danceability also increases, suggesting that there may be a positive correlation between the two. This finding provides a preliminary basis for further research on whether Energy and Danceability can significantly predict song popularity.
+#this one is comparing Energy and Popularity. so as we can see, popularity increases as energy level increase.
 ```
+
+This graph shows the relationship between a song's Energy and its corresponding Danceability frequency. It can be seen that most of the songs have Energy values between 30 and 80, with a particular peak around 70, suggesting that songs with medium to high Energy levels are more common and may be more danceable. As Energy increases, the frequency of Danceability also increases, suggesting that there may be a positive correlation between the two. This finding provides a preliminary basis for further research on whether Energy and Danceability can significantly predict song popularity.
 
 
 ```{r Graph2}
@@ -71,10 +82,10 @@ ggplot(spotify, aes(x = Danceability, y = Popularity)) +
   labs(title = "Does Danceability Affect Song Popularity?",
        x = "Danceability", y = "Popularity") +
   theme_minimal()
-#As can be seen from the graph, there is a positive correlation between a song's Energy and Popularity, i.e. songs with higher Energy may be slightly more popular overall.
-
+#This one compares danceability and popularity. it also show us same relationship with energy
 ```
 
+As can be seen from the graph, there is a positive correlation between a song's Energy and Popularity, i.e. songs with higher Energy may be slightly more popular overall.
 
 
 
@@ -85,33 +96,33 @@ ggplot(spotify, aes(x = Energy, y = Danceability)) +
   labs(title = "Relationship Between Energy and Danceability",
        x = "Energy", y = "Danceability") +
   theme_minimal()
-#As can be seen from the graph, there is a clear positive correlation between Energy and Danceability of a song. That is, songs with higher Energy are more likely to have higher Danceability. This trend is verified by the regression line, although there is still some degree of dispersion in the data points. This finding supports the hypothesis in the previous exploratory analyses that Energy may indirectly further influence song popularity by increasing Danceability.
-
+#following code explains the relationship between danceability and energy. there is also a positive relation between them which can be further analysed.
 ```
 
+As can be seen from the graph, there is a clear positive correlation between Energy and Danceability of a song. That is, songs with higher Energy are more likely to have higher Danceability. This trend is verified by the regression line, although there is still some degree of dispersion in the data points. This finding supports the hypothesis in the previous exploratory analyses that Energy may indirectly further influence song popularity by increasing Danceability.
 
 
 ```{r Graph4}
-spotify$Length <- as.numeric(spotify$`Length (Duration)`)
+spotify$Length <- as.numeric(spotify$`Length`)
 
 spotify %>%
-  filter(`Length (Duration)` < 1000) %>%
-  ggplot(aes(x = `Length (Duration)`, y = Popularity)) +
+  filter(`Length` < 1000) %>%
+  ggplot(aes(x = `Length`, y = Popularity)) +
     geom_point(alpha = 0.6) +
     geom_smooth(method = "lm", se = FALSE, color = "purple") +
     labs(title = "Does Song Length Impact Popularity?",
          x = "Song Length (sec)", y = "Popularity") +
     theme_minimal()
-#The graph shows a slight negative correlation between song length and popularity. That is, shorter songs are more likely to achieve higher popularity overall. This trend is validated by the regression line, which, despite the wide scatter distribution, still shows that longer songs are slightly less popular on the Spotify platform.
-
+#this one also shows that as song length decrease, popularity increase but we need some tests i think that may not be so valid.
 ```
 
+The graph shows a slight negative correlation between song length and popularity. That is, shorter songs are more likely to achieve higher popularity overall. This trend is validated by the regression line, which, despite the wide scatter distribution, still shows that longer songs are slightly less popular on the Spotify platform.
 
 ```{r Graph5}
 ggplot(spotify) +
   geom_smooth(aes(x = Popularity, y = Energy,       color = "Energy"),       method = "lm", se = FALSE) +
   geom_smooth(aes(x = Popularity, y = Danceability, color = "Danceability"), method = "lm", se = FALSE) +
-  geom_smooth(aes(x = Popularity, y = `Length (Duration)`,      color = "Length"),       method = "lm", se = FALSE) +
+  geom_smooth(aes(x = Popularity, y = `Length`,      color = "Length"),       method = "lm", se = FALSE) +
   scale_color_manual("Feature",
                      values = c("Energy"="goldenrod",
                                 "Danceability"="tomato",
@@ -120,8 +131,11 @@ ggplot(spotify) +
        x     = "Popularity",
        y     = "Feature value") +
   theme_minimal()
-#This graph clearly shows the trend relationship between three audio characteristics and song popularity: Danceability and Energy are positively correlated with popularity, while Length is negatively correlated with popularity. That is, more popular songs tend to be more rhythmic and energetic, but shorter in length.
+#everything in one graph. hope it helps. it took like 1 hour to me lol..
 ```
+
+This graph clearly shows the trend relationship between three audio characteristics and song popularity: Danceability and Energy are positively correlated with popularity, while Length is negatively correlated with popularity. That is, more popular songs tend to be more rhythmic and energetic, but shorter in length.
+
 Add distribution graphs and descriptions.
 
 # Research question
@@ -156,8 +170,6 @@ test_data <- temp_data[-valIndex, ]
 
 ## Model selection
 
-Use methods like Lasso and best subset selection to choose the best regressors
-
 We used two methods for model selection: Lasso regression and best subset selection to identify the best predictors of Popularity.
 
 ### Lasso Regression
@@ -180,20 +192,79 @@ coef(lasso_model, s = best_lambda)
 ```
 ### Best Subset Selection
 
-Best subset selection was used to evaluate all possible combinations of predictors and select the best model.
-
-```{r Best Subset}
-# Perform best subset selection
-best_subset <- regsubsets(Popularity ~ Energy + Danceability + Length, data = train_data, nvmax = 3)
-
-# Summary of best subsets
-summary(best_subset)
-
-print(summary_subset$which)
+```{r lm_mse function}
+#creating a function that calculates the mses
+lm_mse <- function(formula, train_data, valid_data) {
+  y_name <- as.character(formula)[2]
+  y_true <- valid_data[[y_name]]
+  
+  lm_fit <- lm(formula, train_data)
+  y_pred <- predict(lm_fit, newdata = valid_data)
+  
+  mean((y_true - y_pred)^2)
+}
 ```
+
+```{r formula generating}
+# function for generating all formulas for given number of predictors
+generate_formulas <- function(p, x_vars, y_var) {
+  # Input checking
+  if (p %% 1 != 0)           stop("Input an integer n")
+  if (p > length(x_vars))    stop("p should be smaller than number of vars")
+  if (!is.character(x_vars)) stop("x_vars should be a character vector")
+  if (!is.character(y_var))  stop("y_vars should be character type")
+
+  apply(combn(x_vars, p), 2, function(vars) {
+    paste0(y_var, " ~ ", paste(vars, collapse = " + "))
+  })
+}
+```
+
+
+```{r predictors}
+# Selecting relevant (numeric) predictors
+predictor_vars <- spotify %>%
+  select(-Index, -Title, -Artist, -`Top Genre`, -Year, -Popularity) %>%
+  colnames()
+predictor_vars
+```
+
+```{r Best subset}
+best_preds <- c()
+best_mses <- c()
+
+# repeating for 1 to 9 predictors
+for (p in 1:9) {
+  # generating formulas
+  formulas <- generate_formulas(p = p, x_vars = predictor_vars, y_var = "Popularity")
+  
+  # calculating the mses for all models with p predictors
+  mses <- rep(0, length(formulas))
+  for (i in 1:length(formulas)){
+    mses[i] <- lm_mse(as.formula(formulas[i]), train_data, val_data)
+  }
+  
+  # selecting the best model for p preddictors
+  best_preds[p] <- formulas[which.min(mses)]
+  best_mses[p] <- min(mses)
+}
+
+# selecting the best model and its mse from the best models
+best_model <- best_preds[which.min(best_mses)]
+best_mse <- min(best_mses)
+```
+
 ## Model evaluation
 
 We evaluated both models on the validation set using Mean Squared Error (MSE) to determine which performs better.
+
+```{r mse function}
+mse <- function(y_true, y_pred) {
+  mean((y_true - y_pred)^2)
+}
+```
+
+
 
 ```{r Model evaluation}
 # Predict on validation set using Lasso
@@ -203,20 +274,22 @@ lasso_pred <- predict(lasso_model, s = best_lambda, newx = X_val)
 # Calculate MSE for Lasso
 lasso_mse <- mean((val_data$Popularity - lasso_pred)^2)
 
-# For best subset, select the best model (e.g., with 2 variables, assuming Energy and Danceability)
-best_model <- lm(Popularity ~ Energy + Danceability, data = train_data)
-best_pred <- predict(best_model, newdata = val_data)
+# Calculating the coefficients of the best model from Best Subset
 
-# Calculate MSE for best subset
-best_mse <- mean((val_data$Popularity - best_pred)^2)
+lm_best_subset <- lm(best_model, train_data)
+
+# Calculating Best Subset MSE based on test data
+y_pred <- predict(lm_best_subset, newdata = test_data)
+y_true <- test_data$Popularity
+test_mse <- mse(y_true, y_pred)
 
 # Compare MSE
 print(paste("Lasso MSE:", round(lasso_mse, 2)))
-print(paste("Best Subset MSE:", round(best_mse, 2)))
+print(paste("Best Subset MSE:", round(test_mse, 2)))
 ```
 
 - Lasso Model: The MSE on the validation set was 209.28.
-- Best Subset Model: Using the two-variable model (Energy and Danceability), the MSE was 209.75.
+- Best Subset Model: Using the best subset selection, the MSE was 173.25.
 
 The Lasso model achieved a slightly lower MSE (209.28 vs. 209.75), indicating marginally better predictive performance on the validation set. Although the difference is small, we selected the Lasso model for final evaluation due to its lower MSE.
 
@@ -273,7 +346,8 @@ In summary, this study provides a preliminary quantitative basis for understandi
 
 # Contributions
 
-Tujiarui 7877714: Conducting data visualization analysis and writing the Introduction and Conclusion.Summarizing key insights, limitations, and future directions in the report.
+* Tujiarui: Conducting data visualization analysis and writing the Introduction and Conclusion. Summarizing key insights, limitations, and future directions in the report.
+* Marton: Selecting best model through best subset. Formatting and 
 
 AI statement:
 
