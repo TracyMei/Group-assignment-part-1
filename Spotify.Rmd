@@ -1,15 +1,23 @@
 ---
 title: "Spotify"
 subtitle: "Practical 2, Group 26"
-author: "Bilgehan Altan, Márton Cserta, Tracy Mei, Jiarui Tu"
+author: 
+  - Bilgehan Altan  
+  - Márton Cserta  
+  - Tracy Mei
+  - Jiarui Tu
 date: "`r Sys.Date()`"
 output:
-  html_document:
-    number_sections: true
+  prettydoc::html_pretty:
+    theme: leonids
+    highlight: github
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+  warning = FALSE,
+  message = FALSE
+)
 ```
 
 
@@ -389,15 +397,20 @@ We compared two modeling approaches: Lasso Regression and Best Subset Selection.
 The final model reveals that a song’s *Energy*, *Danceability*, and *Liveness* are significant predictors of its popularity on Spotify. Energy and Danceability showed positive associations, suggesting that more upbeat and rhythmically engaging tracks tend to perform better with listeners. Liveness, often associated with live performance characteristics, may also influence user engagement. The model coefficients imply that among the selected features, Danceability had a particularly notable positive effect, aligning with earlier exploratory findings. Conversely, although Length was not included in the final model, prior visualizations indicated a slight negative correlation with Popularity, hinting that shorter songs might generally be more appealing
 
 # Conclusion
-This project examined how audio features influence song popularity on Spotify. Using both Lasso Regression and Best Subset Selection, we found that Energy, Danceability, and Liveness were the most predictive variables. The final model, based on Best Subset Selection, achieved a test MSE of 173.25, indicating moderate predictive performance.
-These results suggest that more energetic, danceable, and lively tracks are generally favored by listeners. However, there are some limitations. First, the model only incorporates the three audio features and does not take into account other variables such as artist popularity, music genre, and lyrics content that may significantly affect popularity. Second, the popularity metrics are based on Spotify's internal algorithms, which are calculated in an opaque way and may be affected by changes in the platform's rules. Finally, the Lasso regression is a linear model, which makes it difficult to capture non-linear relationships or complex interaction effects between variables. Future studies may consider introducing more influencing factors and adopting non-linear machine learning methods (e.g., random forests or neural networks) to enhance the predictive ability of the model; at the same time, it may also be extended to other streaming platforms for comparative analyses or to explore the dynamic evolution of popularity in combination with the temporal dimension, so as to understand the mechanism of music popularity in a more comprehensive way.
-In summary, this study provides a preliminary quantitative basis for understanding the audio feature basis of song popularity, and the results are of some guiding significance for the optimisation of music recommendation systems as well as creators' creative strategies, but there is still room for further expansion and deepening.
+
+This project examined how audio features influence song popularity on Spotify. Using both Lasso Regression and Best Subset Selection, we identified Energy, Danceability, and Liveness as the most predictive variables. The final model, based on Best Subset Selection, achieved a test MSE of 173.25, indicating moderate predictive performance.
+
+These results suggest that more energetic, danceable, and lively tracks are generally favored by listeners. However, the model has several limitations. First, it only considers three audio features and does not incorporate other important variables such as artist popularity, music genre, or lyrical content, which may also significantly influence popularity. Second, the popularity metric is derived from Spotify’s internal algorithm, which is not publicly disclosed and may be influenced by changes in the platform’s ranking criteria. Lastly, as a linear model, Best Subset Selection may struggle to capture nonlinear relationships or complex interactions between variables.
+
+Future studies may incorporate a broader set of features and apply nonlinear machine learning methods (e.g., random forests or neural networks) to enhance predictive power. In addition, extending the analysis to other streaming platforms or adding a temporal dimension could offer comparative insights and help capture the dynamics of music popularity over time.
+
+In summary, this study provides a preliminary quantitative foundation for understanding the audio-based drivers of song popularity. While the findings offer potential guidance for recommendation system design and creative production strategies, further research is needed to expand and deepen these insights.
 
 # Contributions
 
 - Tujiarui: Conducting data visualization analysis and writing the Introduction and Conclusion. Summarizing key insights, limitations, and future directions in the report.
-- Marton: Selecting best model through best subset. Formatting and 
+- Marton: Using best subset Selection to evaluate models. Formatting and structure.
 - Tracy: Generate one research question using linear regression line. Using lasso regression and Best Subset Selection, and Model evaluation.
+- Bilgehan: Creating graphs, finding research question by visual analysis through plots. 
 
-AI statement:
-
+AI statement: AI tools such as ChatGPT were used only for some code debugging support and writing language polishing.
